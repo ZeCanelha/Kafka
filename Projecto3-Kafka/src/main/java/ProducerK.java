@@ -16,7 +16,9 @@ public class ProducerK {
  public static void main(String[] args) throws Exception{
 
   //Assign topicName to string variable
-  String topicName = args[0].toString();
+  //String topicName = args[0].toString();
+  
+	 String topicName = "resultstopic";
 
   // create instance for properties to access producer configs   
   Properties props = new Properties();
@@ -45,16 +47,16 @@ public class ProducerK {
     "org.apache.kafka.common.serialization.StringSerializer");
 
   props.put("value.serializer", 
-    "org.apache.kafka.common.serialization.LongSerializer");
+    "org.apache.kafka.common.serialization.StringSerializer");
   
   
   
   
 
-  Producer<String, Long> producer = new KafkaProducer<>(props);
+  Producer<String, String> producer = new KafkaProducer<>(props);
 
   for(int i = 0; i < 1000; i++)
-   producer.send(new ProducerRecord<String, Long>(topicName, Integer.toString(i), (long) i));
+   producer.send(new ProducerRecord<String, String>(topicName, Integer.toString(i), Integer.toString(i)));
   
   System.out.println("Message sent successfully to topic " + topicName);
   producer.close();
