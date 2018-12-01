@@ -73,7 +73,9 @@ public class Database {
 			
 			while( resultSet.next())
 			{
-				return_string += resultSet.getString("OBJECT_NAME");
+				return_string += "Object Name: " + resultSet.getString("OBJECT_NAME") + "\n";
+				return_string += "Price: " + resultSet.getString("PRICE") + "€\n";
+				return_string += "Amount: " + resultSet.getString("Amount") + "\n";
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
