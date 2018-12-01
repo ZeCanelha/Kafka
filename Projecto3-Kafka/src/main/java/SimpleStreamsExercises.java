@@ -7,6 +7,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
 
 
 public class SimpleStreamsExercises {
@@ -25,10 +26,10 @@ public class SimpleStreamsExercises {
   StreamsBuilder builder = new StreamsBuilder();
   KStream<String, Long> lines = builder.stream(topicName);
 
-  KTable<String, Long> outlines = lines.
-    groupByKey().count();
-  outlines.toStream().to(outtopicname);
-   
+  KTable<String, Long> outlines = lines.groupByKey().count();
+
+  outlines.mapValues(v -> "" + v).toStream().to(outtopicname, Produced.with(Serdes.String(), Serdes.String()));
+     
   KafkaStreams streams = new KafkaStreams(builder.build(), props);
   streams.start();
   

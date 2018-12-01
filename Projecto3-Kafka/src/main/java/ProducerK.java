@@ -38,12 +38,16 @@ public class ProducerK {
 
   //The buffer.memory controls the total amount of memory available to the producer for buffering.   
   props.put("buffer.memory", 33554432);
+  
+  // types of values
 
   props.put("key.serializer", 
     "org.apache.kafka.common.serialization.StringSerializer");
 
   props.put("value.serializer", 
     "org.apache.kafka.common.serialization.LongSerializer");
+  
+  
   
   
 
