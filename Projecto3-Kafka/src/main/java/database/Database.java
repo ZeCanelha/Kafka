@@ -77,6 +77,9 @@ public class Database {
 				return_string += "Price: " + resultSet.getString("PRICE") + "€\n";
 				return_string += "Amount: " + resultSet.getString("Amount") + "\n";
 			}
+			preparedStatement.close();
+			resultSet.close();
+			
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

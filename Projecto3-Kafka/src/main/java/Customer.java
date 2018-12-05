@@ -1,5 +1,7 @@
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.Scanner;
+
 //import simple producer packages
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -11,9 +13,15 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 //import ProducerRecord packages
 import org.apache.kafka.clients.producer.ProducerRecord;
 
+import database.Database;
+
 public class Customer {
 	
 	public static void main(String[] args) {
+		
+		
+		
+		
 		
 		/*
 		 * 
@@ -102,12 +110,15 @@ class CustomerProducer implements Runnable
 {
 	private final String produceTopic = "purchaseTopic";
 	private Properties props;
+	private Database db;
 	
 	public CustomerProducer(Properties prop) {
 		System.out.println("Thread create to send messages to " + produceTopic);
 		this.props = prop;
+		this.db = new Database();
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public void run() {
 		
@@ -117,20 +128,36 @@ class CustomerProducer implements Runnable
 		 */
 		
 		Producer<String, String> producer = new KafkaProducer<>(this.props);
-
-		for(int i = 0; i < 1000; i++) {
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		System.out.println("To see whtas in storage type: list_storage ");
+		Scanner keyboardIn = new Scanner(System.in);
+		String message;
+		
+		while(true)
+		{
+			message = keyboardIn.next();
+			
+			if ( message.equalsIgnoreCase("producer_close"))
+				break;
+			
+			else if(message.equalsIgnoreCase("list_storage"))
+			{
+				System.out.println(db.itemList());
 			}
-			producer.send(new ProducerRecord<String, String>(this.produceTopic, Integer.toString(i), Integer.toString(i)));
+			else
+			{
+				producer.send(new ProducerRecord<String, String>(this.produceTopic, message));
+				
+				System.out.println("\nMessage sent successfully to topic " + this.produceTopic + "\n");
+			}
+			
+			
+			
+			
 		}
-	  
-		System.out.println("\nMessage sent successfully to topic " + this.produceTopic);
+		
 		
 		producer.close();
+		db.close();
 		
 	}
 }
@@ -147,6 +174,7 @@ class CustomerCustomer implements Runnable
 		
 	}
 
+	@SuppressWarnings({ "resource", "deprecation" })
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -165,6 +193,7 @@ class CustomerCustomer implements Runnable
     	 * public ConsumerRecord(string topic,int partition, long offset,K key, V value)
     	 */
 	      
+    	String receivedMessage;
       
     	while (true) {
 	    	  
@@ -172,14 +201,19 @@ class CustomerCustomer implements Runnable
     	   * Poll(long timeout/ms)
     	   * Fetch data for the topics or partitions specified using one of the subscribe/assign APIs
     	   * 
+    	   * When one consumer is scubscribed to one or more topic use record.topic to know what to do
+    	   * 
     	   */
-    		ConsumerRecords<String, String> records = consumer.poll(100);
+    		
+			ConsumerRecords<String, String> records = consumer.poll(100);
 	         
     		for (ConsumerRecord<String, String> record : records) {
+    			
+    			receivedMessage = record.value();
+    			
+    			System.out.println("Message received: " + receivedMessage + "\n");
 	         
-    			// print the offset,key and value for the consumer records.
-    			System.out.printf("offset = %d, key = %s, value = %s\n", 
-	            record.offset(), record.key(), record.value());
+    			
     		}
     		
 	      }    
