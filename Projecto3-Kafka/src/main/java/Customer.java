@@ -111,7 +111,11 @@ class CustomerProducer implements Runnable
 	@Override
 	public void run() {
 		
-		// TODO wait for user input to write on a while loop and create a protocol 
+		/*
+		 *  TODO wait for user input to write on a while loop and create a protocol 
+		 *  Wait to consumer subscribe before start for now, for testing.
+		 */
+		
 		Producer<String, String> producer = new KafkaProducer<>(this.props);
 
 		for(int i = 0; i < 1000; i++) {
