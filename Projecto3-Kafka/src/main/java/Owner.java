@@ -3,6 +3,7 @@ import org.apache.kafka.clients.producer.Producer;
 
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.StringTokenizer;
 
 //import KafkaProducer packages
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -16,8 +17,10 @@ public class Owner {
 	public static void main(String[] args) {
 		
 		String produceTopic = "ReorderTopic";
+		StringTokenizer st;
 		Scanner keybordIn = new Scanner(System.in);
 	  	String reorderMessage;
+	  	String [] values = new String[2];
 		Properties props = new Properties();
 		
 
@@ -53,11 +56,31 @@ public class Owner {
 	  	 */
 	  	
 	  	
-	  	System.out.println("Place your reorder message here: ");
+	  	System.out.println("Place your reorder message to topic: " + produceTopic);
 	  	reorderMessage = keybordIn.next();
-	  	producer.send(new ProducerRecord<String, String>(produceTopic,reorderMessage));
 	  	
-	  	producer.close();
+	  	try
+	  	{
+	  		st = new StringTokenizer(reorderMessage," ");
+		  	int i = 0;
+		  	while(st.hasMoreTokens())
+		  	{
+		  		values[i] = st.nextToken();
+		  	}
+		  	
+		  	producer.send(new ProducerRecord<String, String>(produceTopic, values[0],values[1]));
+		  	
+		  	producer.close();
+		  	
+		  	
+		  	
+	  	}catch (ArrayIndexOutOfBoundsException e) {
+			System.out.println(e.getMessage());
+		}
+	  	
+	  	
+	  	
+	  	
 	  	
 	  	
 	  	
