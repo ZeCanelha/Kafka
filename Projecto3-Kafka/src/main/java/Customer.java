@@ -19,10 +19,6 @@ public class Customer {
 	
 	public static void main(String[] args) {
 		
-		
-		
-		
-		
 		/*
 		 * 
 		 * Customer Producer properties
@@ -108,7 +104,8 @@ public class Customer {
 
 class CustomerProducer implements Runnable
 {
-	private final String produceTopic = "purchaseTopic";
+	private final String produceTopic = "purchasestopic";
+	private final String customerKey = "PURCHASE";
 	private Properties props;
 	private Database db;
 	
@@ -128,7 +125,7 @@ class CustomerProducer implements Runnable
 		 */
 		
 		Producer<String, String> producer = new KafkaProducer<>(this.props);
-		System.out.println("To see whtas in storage type: list_storage ");
+		System.out.println("To see whats in storage type: list_storage ");
 		Scanner keyboardIn = new Scanner(System.in);
 		String message;
 		
@@ -145,7 +142,7 @@ class CustomerProducer implements Runnable
 			}
 			else
 			{
-				producer.send(new ProducerRecord<String, String>(this.produceTopic, message));
+				producer.send(new ProducerRecord<String, String>(this.produceTopic,customerKey,message));
 				
 				System.out.println("\nMessage sent successfully to topic " + this.produceTopic + "\n");
 			}
@@ -164,7 +161,13 @@ class CustomerProducer implements Runnable
 
 class CustomerCustomer implements Runnable
 {
-	private final String  consumeTopic = "purchaseTopic";
+	
+	/*
+	 * TODO: Reply topic for diffe
+	 * 
+	 */
+	
+	private final String  consumeTopic = "ReplyTopic";
 	private Properties props;
 	
 	CustomerCustomer(Properties prop)

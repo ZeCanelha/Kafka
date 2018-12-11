@@ -157,5 +157,27 @@ public class Database {
 		
 		return amount;
 	}
+	
+	public String getPrice( String productName )
+	{
+		String sqlRequest = "SELECT PRICE FROM SHOP WHERE OBJECT_NAME = ?";
+		String price = null;
+		
+		try {
+			
+			preparedStatement = connect.prepareStatement(sqlRequest);
+			preparedStatement.setString(1, productName);
+			
+			resultSet = preparedStatement.executeQuery();
+			
+			if ( resultSet.next())
+				price = resultSet.getString(1);
+			
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		}
+		
+		return price;
+	}
 
 }
