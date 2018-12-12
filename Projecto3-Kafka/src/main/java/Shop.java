@@ -1,21 +1,18 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-import javax.xml.crypto.Data;
+
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.kstream.ForeachAction;
-import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
 
 import database.Database;
 
@@ -83,8 +80,9 @@ public class Shop {
 	  	 */
 	  	
 	  	Database db = new Database();
-	  	String message;
+	  	String replyTopic;
 	  	HashMap<String, String> map;
+	  	
 	  	
 	  	KafkaConsumer<String, String> shopConsumer = new KafkaConsumer<>(ccprops);
   		shopConsumer.subscribe(topics);
@@ -106,6 +104,8 @@ public class Shop {
 	  				{
 	  					String product = record.key();
 		  				map = parser(record.value());
+		  				map.put("Product", product);
+		  				replyTopic = map.get("ReplyTopic");
 
 		  				/* check storage  and reply accordingly guardar o amount para actualizar na bd */
 		  				
@@ -114,7 +114,10 @@ public class Shop {
 		  				int clientAmont = Integer.parseInt(map.get("Amount"));
 		  				int storageAmount = Integer.parseInt(storageCheck.get("Amount"));
 		  				int ivalue = Integer.parseInt(storageCheck.get("Ivalue"));
-
+		  				
+		  				
+	  					
+	  					
 		  				
 		  				/*
 		  				 *  Se houver stock disponivel enviar mensagem para o cliente
@@ -123,6 +126,12 @@ public class Shop {
 		  				if (  storageAmount >= clientAmont  )
 		  				{
 		  					/* TODO: send to customer */
+		  					System.out.println("Entrei");
+		  					
+		  					String price = map.put("Price", db.getPrice(product));
+		  					
+		  					Thread send = new Thread( new SendReply(props,replyTopic,map));
+		  					send.start();
 		  					
 		  					
 		  					
@@ -138,6 +147,7 @@ public class Shop {
 		  					}
 		  					else
 		  					{
+		  						
 		  						/* update values on database */
 		  						db.updateStorage(product, String.valueOf(storageAmount-clientAmont));
 		  						
@@ -186,12 +196,18 @@ public class Shop {
 	  					
 	  					
 	  					
+	  					
 	  				}
 	  				else
 	  				{
 	  					System.out.println("Inserindo : " + product);
-	  					/* Produto novo */
-	  					db.setStorage(product, amount, price);
+	  					
+	  					/* Produto novo com taxa */
+	  					
+	  					int newPrice = Integer.parseInt(price);
+	  					newPrice = (int) (newPrice * 1.3);
+	  					
+	  					db.setStorage(product, amount, String.valueOf(newPrice));
 	  					
 	  				}
 	  				
@@ -213,8 +229,7 @@ public class Shop {
 	{
 		
 		StringTokenizer str = new StringTokenizer(message, ",");
-		
-		
+
 		HashMap<String, String> map = new HashMap<>();
 		
 		int i = 0;
@@ -225,8 +240,9 @@ public class Shop {
 			{
 				map.put("Amount", str.nextToken());
 			}
-			else
-				map.put("Price", str.nextToken());
+			else if ( i == 1)
+				map.put("ReplyTopic", str.nextToken());		
+				
 			i++;
 		}
 		
@@ -236,5 +252,34 @@ public class Shop {
 		
 	}
 }
+
+
+class SendReply implements Runnable
+{
+	private String topicToRespond;
+	private Properties props;
+	private HashMap<String,String> map;
 	
+	SendReply (Properties props, String s, HashMap<String,String> map)
+	{
+		this.props = props;
+		this.topicToRespond = s;
+		this.map = map;
+	}
+
+	@Override
+	public void run() {
+		
+		String message = map.get("Product") +"," +map.get("Amount") + "," + map.get("Price");
+		
+		Producer<String, String> producer = new KafkaProducer<>(this.props);
+		producer.send(new ProducerRecord<String, String>(this.topicToRespond,"Accepted",message));
+		producer.close();
+		
+		System.out.println("Enviei");
+		
+	}
+}
+
+
 

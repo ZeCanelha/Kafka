@@ -100,8 +100,8 @@ public class Database {
 				+ "WHERE OBJECT_NAME = ?";
 		try {
 			preparedStatement = connect.prepareStatement(sqlRequest);
-			preparedStatement.setString(1, prodcutName);
-			preparedStatement.setString(2, amount);
+			preparedStatement.setString(2, prodcutName);
+			preparedStatement.setString(1, amount);
 			
 			preparedStatement.executeUpdate();
 			preparedStatement.close();

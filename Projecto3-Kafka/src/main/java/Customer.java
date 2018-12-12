@@ -1,5 +1,7 @@
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Scanner;
 
 //import simple producer packages
@@ -78,12 +80,21 @@ public class Customer {
 	      
 	  	ccprops.put("value.deserializer","org.apache.kafka.common.serialization.StringDeserializer");
 	  	
+	  	
+	  	/* Create a topic for response */
+	  	
+	  	 byte[] array = new byte[7]; // length is bounded by 7
+	     new Random().nextBytes(array);
+	     String generatedTopic = new String(array, Charset.forName("UTF-8"));
+	  
+	     System.out.println("Topic for replying: " + generatedTopic);
+	  	
 	  	/*
 	  	 *  Creating Customer-Customer thread
 	  	 *  
 	  	 */
 	  	
-	  	Thread CustumerCustthread = new Thread(new CustomerCustomer(ccprops));
+	  	Thread CustumerCustthread = new Thread(new CustomerCustomer(ccprops,"reply"));
 	  	
 	  	CustumerCustthread.start();
 	  	
@@ -91,7 +102,7 @@ public class Customer {
 	  	 *  Creating Customer-Producer thread
 	  	 */
 	  	
-	  	Thread CustumerProdthread = new Thread(new CustomerProducer(props));
+	  	Thread CustumerProdthread = new Thread(new CustomerProducer(props,"reply"));
 	  	
 	  	CustumerProdthread.start();
 	  	
@@ -106,13 +117,15 @@ class CustomerProducer implements Runnable
 {
 	private final String produceTopic = "purchasestopic";
 	private final String customerKey = "PURCHASE";
+	private String topicToRespond;
 	private Properties props;
 	private Database db;
 	
-	public CustomerProducer(Properties prop) {
+	public CustomerProducer(Properties prop, String topicRandom) {
 		System.out.println("Thread create to send messages to " + produceTopic);
 		this.props = prop;
 		this.db = new Database();
+		this.topicToRespond = topicRandom;
 	}
 
 	@SuppressWarnings("resource")
@@ -125,7 +138,7 @@ class CustomerProducer implements Runnable
 		 */
 		
 		Producer<String, String> producer = new KafkaProducer<>(this.props);
-		System.out.println("To see whats in storage type: list_storage ");
+		System.out.println("To see whats in storage type in product: view ");
 		Scanner keyboardIn = new Scanner(System.in);
 		String productName, amount, moneyGiven,message;
 		
@@ -133,22 +146,22 @@ class CustomerProducer implements Runnable
 		{
 			System.out.println("Product:");
 			productName = keyboardIn.next();
-			System.out.println("Amount:");
-			amount = keyboardIn.next();
-			System.out.println("Money: ");
-			moneyGiven = keyboardIn.next();
+			
 			
 			if ( productName.equalsIgnoreCase("producer_close"))
 				break;
 			
-			else if(productName.equalsIgnoreCase("list_storage"))
+			else if(productName.equalsIgnoreCase("view"))
 			{
 				System.out.println(db.itemList());
-				db.close();
+				
 			}
 			else
 			{
-				message = amount + "," + moneyGiven;
+				System.out.println("Amount:");
+				amount = keyboardIn.next();
+				
+				message = amount + "," + topicToRespond;
 				producer.send(new ProducerRecord<String, String>(this.produceTopic,productName,message));
 				
 				System.out.println("\nMessage sent successfully to topic " + this.produceTopic);
@@ -171,13 +184,14 @@ class CustomerCustomer implements Runnable
 	 * 
 	 */
 	
-	private final String  consumeTopic = "myreplytopic";
+	private final String consumeTopic;
 	private Properties props;
 	
-	CustomerCustomer(Properties prop)
+	CustomerCustomer(Properties prop, String consume)
 	{
-		System.out.println("Waiting messages from " + consumeTopic);
+		System.out.println("Waiting messages from " + consume);
 		this.props = prop;
+		this.consumeTopic = consume;
 		
 	}
 
@@ -217,6 +231,7 @@ class CustomerCustomer implements Runnable
     		for (ConsumerRecord<String, String> record : records) {
     			
     			receivedMessage = record.value();
+
     			
     			System.out.println("Message received: " + receivedMessage + "\n");
 	         
