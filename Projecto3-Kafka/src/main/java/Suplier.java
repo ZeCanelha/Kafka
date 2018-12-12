@@ -1,6 +1,7 @@
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Scanner;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -26,7 +27,7 @@ public class Suplier {
 	  	ccprops.put("auto.commit.interval.ms", "1000");	      
 	  	ccprops.put("session.timeout.ms", "30000");      
 	  	ccprops.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");    
-	  	ccprops.put("value.deserializer","org.apache.kafka.common.serialization.StringDeserializer");
+	  	ccprops.put("value.deserializer","org.apache.kafka.common.serialization.LongDeserializer");
 	  	
 	  	/*
 	  	 * Producer properties
@@ -49,18 +50,22 @@ public class Suplier {
 	  	props.put("key.serializer", 
 	    "org.apache.kafka.common.serialization.StringSerializer");
 	  	props.put("value.serializer", 
-	    "org.apache.kafka.common.serialization.LongSerializer");
+	    "org.apache.kafka.common.serialization.StringSerializer");
 	  	
 	  	
 	  	
-	  	KafkaConsumer<String, Long> suplierConsumer = new KafkaConsumer<>(ccprops);
+	  	
 	  	
 	  	String consumeTopic = "reordertopic";
 	  	String produceTopic = "shipmentstopic";
 	  	
+	  	
+	  	KafkaConsumer<String, Long> suplierConsumer = new KafkaConsumer<>(ccprops);
+	  	suplierConsumer.subscribe(Arrays.asList(consumeTopic));
+	  	
 	  	while (true) 
 	  	{
-	  		suplierConsumer.subscribe(Arrays.asList(consumeTopic));
+	  		
 	  		
 	  		ConsumerRecords<String, Long> records = suplierConsumer.poll(100); 
 	  		
@@ -82,14 +87,16 @@ public class Suplier {
 	static void readNewOrder(String toTopic, String key, Long value, Properties props)
 	{
 		
-		Random rd = new Random();
-		int price = rd.nextInt(25);
+		System.out.println("Define price: ");
+		Scanner sc = new Scanner(System.in);
+		String price = sc.next();
 		
 		
 		KafkaProducer<String, String> produceNewShipment = new KafkaProducer<>(props);
-		String message = String.valueOf(value) + "-" + String.valueOf(price);
+		String message = String.valueOf(value) + "-" + price;
 		/* Send information */
 		produceNewShipment.send(new ProducerRecord<String, String>(toTopic, key, message));
+		System.out.println("Sending products...");
 		produceNewShipment.close();
 
 	}

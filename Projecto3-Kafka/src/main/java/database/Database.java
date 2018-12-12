@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 public class Database {
 	
@@ -58,8 +59,8 @@ public class Database {
                 connect.close();
                 
             } catch (SQLException e) {
-            	
-                e.printStackTrace();
+            	System.out.println("Database already closed");
+                
             }
         }
     }
@@ -78,7 +79,7 @@ public class Database {
 			{
 				return_string += "Object Name: " + resultSet.getString("OBJECT_NAME") + "\n";
 				return_string += "Price: " + resultSet.getString("PRICE") + "€\n";
-				return_string += "Amount: " + resultSet.getInt("AMOUNT") + "\n";
+				return_string += "Amount: " + resultSet.getString("AMOUNT") + "\n";
 			}
 			preparedStatement.close();
 			resultSet.close();
@@ -92,7 +93,7 @@ public class Database {
 		
 	}
 	
-	public void updateStorage(String prodcutName, int amount)
+	public void updateStorage(String prodcutName, String amount)
 	{
 		String sqlRequest = "UPDATE SHOP "
 				+ "SET AMOUNT = ? "
@@ -100,9 +101,9 @@ public class Database {
 		try {
 			preparedStatement = connect.prepareStatement(sqlRequest);
 			preparedStatement.setString(1, prodcutName);
-			preparedStatement.setInt(2, amount);
+			preparedStatement.setString(2, amount);
 			
-			preparedStatement.executeUpdate(sqlRequest);
+			preparedStatement.executeUpdate();
 			preparedStatement.close();
 			
 			
@@ -111,20 +112,20 @@ public class Database {
 		}
 	}
 	
-	public void setStorage( String productName, int amount, String price  )
+	public void setStorage( String productName, String amount, String price  )
 	{
 		
-		String sqlRequest = "INSERT INTO SHOP(OBJECT_NAME,AMOUNT,PRICE) "
-				+ "VALUES(?,?,?)";
+		String sqlRequest = "INSERT INTO SHOP(OBJECT_NAME,AMOUNT,PRICE,IVALUE) VALUES(?,?,?,?)";
 		
 		try {
 			
 			preparedStatement = connect.prepareStatement(sqlRequest);
 			preparedStatement.setString(1, productName);
-			preparedStatement.setInt(2, amount);
+			preparedStatement.setString(2, amount);
 			preparedStatement.setString(3, price);
+			preparedStatement.setString(4, amount);
 			
-			preparedStatement.executeUpdate(sqlRequest);
+			preparedStatement.executeUpdate();
 			preparedStatement.close();
 			
 		} catch (SQLException e) {
@@ -132,10 +133,10 @@ public class Database {
 		}	
 	}
 	
-	public int checkStorageAmount(String productName)
+	public HashMap<String,String> checkStorageAmount(String productName)
 	{
-		int amount = 0;
-		String sqlRequest = "SELECT AMOUNT FROM SHOP "
+		HashMap<String,String> map = new HashMap<>();
+		String sqlRequest = "SELECT AMOUNT, IVALUE FROM SHOP "
 				+ "WHERE OBJECT_NAME = ?";
 		
 		try {
@@ -146,8 +147,12 @@ public class Database {
 			
 			if(resultSet.next())
 			{
-				amount = resultSet.getInt(1);
+				map.put("Amount", resultSet.getString(1) );
+				map.put("Ivalue", resultSet.getString(2));
 			}
+			
+			preparedStatement.close();
+			resultSet.close();
 			
 		} catch (SQLException e) {
 			
@@ -155,7 +160,7 @@ public class Database {
 		}
 		
 		
-		return amount;
+		return map;
 	}
 	
 	public String getPrice( String productName )
@@ -173,11 +178,36 @@ public class Database {
 			if ( resultSet.next())
 				price = resultSet.getString(1);
 			
+			preparedStatement.close();
+			resultSet.close();
+			
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
 		
 		return price;
 	}
+	
+	public boolean hasProduct(String product)
+	{
+		String sqlRequest = "SELECT * FROM SHOP WHERE OBJECT_NAME = ? ";
+		
+		try {
+			
+			preparedStatement = connect.prepareStatement(sqlRequest);
+			preparedStatement.setString(1, product);
+			resultSet = preparedStatement.executeQuery();
+			
+			if ( resultSet.next())
+				return true;
+			
+		} catch (SQLException e) {
+			System.out.println("Aqui ?" + e.getMessage());
+			
+		}
+		
+		return false;
+	}
+	
 
 }

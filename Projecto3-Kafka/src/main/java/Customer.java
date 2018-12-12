@@ -127,34 +127,38 @@ class CustomerProducer implements Runnable
 		Producer<String, String> producer = new KafkaProducer<>(this.props);
 		System.out.println("To see whats in storage type: list_storage ");
 		Scanner keyboardIn = new Scanner(System.in);
-		String message;
+		String productName, amount, moneyGiven,message;
 		
 		while(true)
 		{
-			message = keyboardIn.next();
+			System.out.println("Product:");
+			productName = keyboardIn.next();
+			System.out.println("Amount:");
+			amount = keyboardIn.next();
+			System.out.println("Money: ");
+			moneyGiven = keyboardIn.next();
 			
-			if ( message.equalsIgnoreCase("producer_close"))
+			if ( productName.equalsIgnoreCase("producer_close"))
 				break;
 			
-			else if(message.equalsIgnoreCase("list_storage"))
+			else if(productName.equalsIgnoreCase("list_storage"))
 			{
 				System.out.println(db.itemList());
+				db.close();
 			}
 			else
 			{
-				producer.send(new ProducerRecord<String, String>(this.produceTopic,customerKey,message));
+				message = amount + "," + moneyGiven;
+				producer.send(new ProducerRecord<String, String>(this.produceTopic,productName,message));
 				
-				System.out.println("\nMessage sent successfully to topic " + this.produceTopic + "\n");
+				System.out.println("\nMessage sent successfully to topic " + this.produceTopic);
 			}
-			
-			
-			
+
 			
 		}
-		
-		
+
 		producer.close();
-		db.close();
+		
 		
 	}
 }
@@ -167,7 +171,7 @@ class CustomerCustomer implements Runnable
 	 * 
 	 */
 	
-	private final String  consumeTopic = "ReplyTopic";
+	private final String  consumeTopic = "myreplytopic";
 	private Properties props;
 	
 	CustomerCustomer(Properties prop)
