@@ -46,12 +46,12 @@ public class MyRESTAdmin {
 
 
 			
-			System.out.println("-----------------------------Admin Console-----------------------------------");
+			System.out.println("----------------------------Admin Console-----------------------------------");
 			System.out.println("Options:");
 			System.out.println("1. Number of items ever sold.");
 			System.out.println("2. Number of units sold of each item1.");
 			System.out.println("3. Maximum price of each item sold so far.");
-			System.out.println("4. Average number of purchases per order of supplies (for each item).");
+			System.out.println("4. Average number of purchases per ordezr of supplies (for each item).");
 			System.out.println("6. Revenue, expenses, and profit of the shop so far.");
 			System.out.println("7. Item providing the highest profit over the last x minutes");
 			System.out.println("8. Query over a range of products for average sales price.");
