@@ -1,10 +1,12 @@
 package Rest;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -23,6 +25,12 @@ import org.apache.kafka.streams.kstream.ForeachAction;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.state.KeyValueIterator;
+import org.apache.kafka.streams.state.QueryableStoreTypes;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.json.JSONObject;
 
 
 
@@ -68,7 +76,7 @@ public class StudentsKeeper {
  	
  	@Path("numberItemsSoldEach")
  	@GET
- 	public void NumberItemsSoldEach()
+ 	public JSONObject NumberItemsSoldEach()
  	{
  		Properties props = new Properties();
  		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
@@ -79,23 +87,42 @@ public class StudentsKeeper {
  		StreamsBuilder builder = new StreamsBuilder();
  		KStream<String,String> topicStream = builder.stream("reply");
  		
- 		KStream<String,String> newStream = topicStream.map((k,v) -> KeyValue.pair(v.split(",")[0],v.split(",")[1]));
+ 		KStream<String,Long> newStream = topicStream.map((k,v) -> KeyValue.pair(v.split(",")[0],Long.parseLong(v.split(",")[1])));
  		
- 		KTable<String, String> newLines = newStream.groupByKey()
- 				.reduce((oldval,newval) -> Long.toString(Long.parseLong(oldval) + Long.parseLong(newval)) ,Materialized.as("MaxAmountItems"));
+ 		KTable<String, Long> newLines = newStream.groupByKey()
+ 				.reduce((oldval,newval) -> oldval + newval ,Materialized.as("MaxAmountItems"));
  		
- 		
- 		newStream.foreach(new ForeachAction<String, String>() {
- 			
- 		    public void apply(String key, String value) {
- 		    	System.out.println(key + ":" + value);
- 		        
- 		    }  
- 		 });
+
  		
  		KafkaStreams streams = new KafkaStreams(builder.build(), props);
  	    streams.start();
  	    
+ 	   JSONObject obj = new JSONObject();
+ 	   
+ 	    
+ 	    try {
+			Thread.sleep(2000);
+			ReadOnlyKeyValueStore<String, Long> keyValueStore = streams.store("MaxAmountItems", QueryableStoreTypes.keyValueStore());
+			KeyValueIterator<String, Long> range = keyValueStore.all();
+			   
+			
+			while (range.hasNext()) {
+			   KeyValue<String, Long> next = range.next();
+			   
+			   System.out.println("Product" + next.key + "Items sold: " + next.value);
+			   obj.put(next.key,next.value);
+			   
+			}
+			range.close();
+			
+			
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+ 	    
+ 	   return obj;
+
  	}
  	
  	
