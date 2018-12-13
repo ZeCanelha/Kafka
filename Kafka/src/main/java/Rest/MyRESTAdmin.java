@@ -46,7 +46,7 @@ public class MyRESTAdmin {
 
 
 			
-			System.out.println("----------------------------Admin Console-----------------------------------");
+			System.out.println("---------------------------Admin Console-----------------------------------");
 			System.out.println("Options:");
 			System.out.println("1. Number of items ever sold.");
 			System.out.println("2. Number of units sold of each item1.");
