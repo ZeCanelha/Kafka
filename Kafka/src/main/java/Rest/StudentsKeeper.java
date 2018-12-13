@@ -12,6 +12,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Java;
 import org.apache.kafka.streams.KafkaStreams;
@@ -38,8 +39,10 @@ public class StudentsKeeper {
  		 * 
  		 */
  		Properties props = new Properties();
- 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "exercises-application");
+ 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
 	  	props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+	  	props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,"SASL_SSL");
+	  	props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
 		props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 		
@@ -67,7 +70,7 @@ public class StudentsKeeper {
  	public void NumberItemsSoldEach()
  	{
  		Properties props = new Properties();
- 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "exercises-application");
+ 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
 	  	props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
 		props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());

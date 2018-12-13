@@ -132,15 +132,11 @@ class CustomerProducer implements Runnable
 	@Override
 	public void run() {
 		
-		/*
-		 *  TODO wait for user input to write on a while loop and create a protocol 
-		 *  Wait to consumer subscribe before start for now, for testing.
-		 */
 		
 		Producer<String, String> producer = new KafkaProducer<>(this.props);
 		System.out.println("To see whats in storage type in product: view ");
 		Scanner keyboardIn = new Scanner(System.in);
-		String productName, amount, moneyGiven,message;
+		String productName, amount ,message;
 		
 		while(true)
 		{
@@ -198,7 +194,7 @@ class CustomerCustomer implements Runnable
 	@SuppressWarnings({ "resource", "deprecation" })
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
+		
 		KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(props);
 		      
 		//Kafka Consumer subscribes list of topics here.
@@ -207,12 +203,6 @@ class CustomerCustomer implements Runnable
     	//print the topic name
     	System.out.println("Subscribed to topic " + this.consumeTopic);
 	     
-    	/*
-    	 * 
-    	 * TODO: Check the method with the partition for topic
-    	 * 
-    	 * public ConsumerRecord(string topic,int partition, long offset,K key, V value)
-    	 */
 	      
     	String receivedMessage;
       

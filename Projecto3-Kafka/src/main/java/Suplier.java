@@ -78,6 +78,8 @@ public class Suplier {
 	  			readNewOrder(produceTopic, record.key(), record.value(), props);
 	  			
 	  			
+	  			
+	  			
 	  		}
 			
 		}
@@ -90,7 +92,6 @@ public class Suplier {
 		System.out.println("Define price: ");
 		Scanner sc = new Scanner(System.in);
 		String price = sc.next();
-		
 		
 		KafkaProducer<String, String> produceNewShipment = new KafkaProducer<>(props);
 		String message = String.valueOf(value) + "-" + price;

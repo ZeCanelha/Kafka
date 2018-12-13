@@ -9,9 +9,6 @@ import java.util.HashMap;
 
 public class Database {
 	
-	/*
-	 * TODO: Add logger to debug
-	 */
 	
 	private static  Connection connect = null;
     private static  PreparedStatement preparedStatement = null;
@@ -85,7 +82,6 @@ public class Database {
 			resultSet.close();
 			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		

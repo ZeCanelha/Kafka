@@ -20,7 +20,7 @@ import database.Database;
 
 public class Shop {
 	
-	
+	static boolean arrived;
 	
 	public static void main(String[] args) {
 		
@@ -84,6 +84,7 @@ public class Shop {
 	  	HashMap<String, String> map;
 	  	
 	  	
+	  	
 	  	KafkaConsumer<String, String> shopConsumer = new KafkaConsumer<>(ccprops);
   		shopConsumer.subscribe(topics);
 	  	
@@ -116,32 +117,28 @@ public class Shop {
 		  				int ivalue = Integer.parseInt(storageCheck.get("Ivalue"));
 		  				
 		  				
-	  					
-	  					
-		  				
 		  				/*
 		  				 *  Se houver stock disponivel enviar mensagem para o cliente
 		  				 *  Se depois da compra o stock baixar para - de 25% reabastecer
 		  				 */
 		  				if (  storageAmount >= clientAmont  )
 		  				{
-		  					/* TODO: send to customer */
 		  					System.out.println("Entrei");
 		  					
 		  					String price = map.put("Price", db.getPrice(product));
 		  					
-		  					Thread send = new Thread( new SendReply(props,replyTopic,map));
-		  					send.start();
+		  					sendReply(props, map, replyTopic);
 		  					
-		  					
-		  					
-		  					/* check percentage 
-		  					 * TODO: check if float is better */
 		  					int percentage = (int) (ivalue * 0.25);
 		  					
 		  					if ((storageAmount - clientAmont) < percentage )
 		  					{
-		  						/* Reorder */
+		  						System.out.println("Low storage, reordering");
+
+		  						int newOrder = ivalue;
+		  						map.put("Amount", String.valueOf(newOrder));
+		  						
+		  						sendReorderRequest(map, "reordertopic");
 		  						
 		  						
 		  					}
@@ -150,8 +147,7 @@ public class Shop {
 		  						
 		  						/* update values on database */
 		  						db.updateStorage(product, String.valueOf(storageAmount-clientAmont));
-		  						
-		  						
+
 		  					}
 		  					
 		  				}
@@ -159,28 +155,27 @@ public class Shop {
 		  				else
 		  				{
 		  					
-		  					/* wait/notify
-		  					 * 
-		  					 */
+		  					System.out.println("Insuficient stock. Reordering from suplier.");
+		  					sendReorderRequest(map, "reordertopic");
+		  					try {
+		  						
+								Thread.sleep(20000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
 		  					
-		  					/* TODO: E dar wait ate q responda request more items from suplier */
+		  					sendReply(props, map, replyTopic);
+		  					
+		  					
 		  				}
 	  				}catch(NumberFormatException nfe)
 	  				{
 	  					System.out.println(nfe.getMessage());
 	  				}
-	  				
-	  				
-
 	  			}
 	  			
 	  			if ( record.topic().equals("shipmentstopic"))
 	  			{
-	  				
-	  				/* TODO: Update items in database
-	  				 * TODO: Se for preciso passar na mensagem se é uma ordem nova ou se é reabastecimento 
-	  				 *  
-	  				*/
 	  				
 	  				String product = record.key();
 	  				StringTokenizer str = new StringTokenizer(record.value(),"-");
@@ -192,11 +187,9 @@ public class Shop {
 	  				
 	  				if (db.hasProduct(product)) 
 	  				{
-	  					/* TODO: verificar a cena do preço */
-	  					
-	  					
-	  					
-	  					
+	  					db.updateStorage(product, amount);
+	  					System.out.println("Storage updated!");
+
 	  				}
 	  				else
 	  				{
@@ -206,15 +199,10 @@ public class Shop {
 	  					
 	  					int newPrice = Integer.parseInt(price);
 	  					newPrice = (int) (newPrice * 1.3);
-	  					
 	  					db.setStorage(product, amount, String.valueOf(newPrice));
 	  					
 	  				}
-	  				
-	  				
-	  				
-	  				
-	  				
+
 	  			}
 	  				
 	         
@@ -251,34 +239,42 @@ public class Shop {
 		return map;
 		
 	}
-}
-
-
-class SendReply implements Runnable
-{
-	private String topicToRespond;
-	private Properties props;
-	private HashMap<String,String> map;
 	
-	SendReply (Properties props, String s, HashMap<String,String> map)
+	static void sendReply(Properties props, HashMap<String,String> map, String topic )
 	{
-		this.props = props;
-		this.topicToRespond = s;
-		this.map = map;
-	}
-
-	@Override
-	public void run() {
-		
 		String message = map.get("Product") +"," +map.get("Amount") + "," + map.get("Price");
 		
-		Producer<String, String> producer = new KafkaProducer<>(this.props);
-		producer.send(new ProducerRecord<String, String>(this.topicToRespond,"Accepted",message));
+		Producer<String, String> producer = new KafkaProducer<>(props);
+		producer.send(new ProducerRecord<String, String>(topic,"Accepted",message));
 		producer.close();
 		
-		System.out.println("Enviei");
-		
+		System.out.println("Produtos enviados");
 	}
+	
+	static void sendReorderRequest(HashMap<String,String> map, String topic)
+	{
+		Properties newProps = new Properties();
+		newProps.put("bootstrap.servers", "localhost:9092");
+		newProps.put("acks", "all");
+		newProps.put("retries", 0);
+		newProps.put("batch.size", 16384);
+		newProps.put("linger.ms", 1);
+		newProps.put("buffer.memory", 33554432);
+		newProps.put("key.serializer", 
+	    "org.apache.kafka.common.serialization.StringSerializer");
+		newProps.put("value.serializer", 
+	    "org.apache.kafka.common.serialization.LongSerializer");
+	  	
+	  	long amount = Long.parseLong(map.get("Amount"));
+	  	
+		Producer<String, Long> producer = new KafkaProducer<>(newProps);
+		
+		producer.send(new ProducerRecord<String, Long>(topic, map.get("Product"),amount));
+		producer.close();
+		
+		System.out.println("Produtos em falta pedidos");
+		
+	}	
 }
 
 
