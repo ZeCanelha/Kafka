@@ -87,7 +87,7 @@ public class Customer {
 	     new Random().nextBytes(array);
 	     String generatedTopic = new String(array, Charset.forName("UTF-8"));
 	  
-	     System.out.println("Topic for replying: " + generatedTopic);
+	     //System.out.println("Topic for replying: " + generatedTopic);
 	  	
 	  	/*
 	  	 *  Creating Customer-Customer thread
