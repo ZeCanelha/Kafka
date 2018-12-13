@@ -97,6 +97,9 @@ public class Suplier {
 		String message = String.valueOf(value) + "-" + price;
 		/* Send information */
 		produceNewShipment.send(new ProducerRecord<String, String>(toTopic, key, message));
+		
+		int spent = (int) (Integer.parseInt(price) * value);
+ 		produceNewShipment.send(new ProducerRecord<String, String>("purchases", "Spent", String.valueOf(spent)));
 		System.out.println("Sending products...");
 		produceNewShipment.close();
 

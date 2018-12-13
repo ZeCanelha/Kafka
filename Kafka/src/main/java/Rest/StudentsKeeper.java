@@ -186,8 +186,10 @@ public class StudentsKeeper {
  	
  	@Path("revenueProfit")
  	@GET
- 	public List<String> RevenueProfit()
+ 	public HashMap<String,String> RevenueProfit()
  	{
+ 		HashMap<String,String> obj = new HashMap<>();
+ 		
  		Properties props = new Properties();
  		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
 	  	props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
@@ -195,13 +197,54 @@ public class StudentsKeeper {
 		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 		
  		StreamsBuilder builder = new StreamsBuilder();
- 		KStream<String,String> topicStream = builder.stream("");
+ 		KStream<String,String> topicStream = builder.stream("purchases");
  		
- 		KStream<String,String> newStream = topicStream.map((k,v) -> KeyValue.pair(v.split(",")[0],v.split(",")[2]));
+ 		KTable<String, String> purchasesStream = topicStream.groupByKey()
+ 				.reduce((oldval,newval) -> Long.toString(Long.parseLong(oldval) + Long.parseLong(newval)) ,Materialized.as("economics"));
  		
- 		List<String> list = new ArrayList<>();
+ 		KafkaStreams streams = new KafkaStreams(builder.build(), props);
+ 	    streams.start();
  		
- 		return list;
+ 		try {
+			Thread.sleep(2000);
+			ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("economics", QueryableStoreTypes.keyValueStore());
+			KeyValueIterator<String, String> range = keyValueStore.all();
+			   
+			int spent = 0, revenue = 0;
+			while (range.hasNext()) {
+			   KeyValue<String, String> next = range.next();
+			   
+
+			   if (next.key.equalsIgnoreCase("revenue")) {
+				   obj.put(next.key, next.value);
+				  
+			   } else {
+				   obj.put(next.key, next.value);
+			  }
+			}
+			range.close();
+			
+			if (obj.containsKey("Spent"))
+			{
+				spent = Integer.parseInt(obj.get("Spent"));
+			}
+			if (obj.containsKey("Revenue"))
+			{
+				revenue = Integer.parseInt(obj.get("Revenue"));
+			}
+			
+			System.out.println("Revenue: " +revenue+"\nSpent: " + spent + "\nProfit: " + (revenue - spent));
+			
+
+				
+			
+			
+		} catch (InterruptedException e) {
+
+			e.printStackTrace();
+		}
+
+ 		return obj;
 
  	}
  	

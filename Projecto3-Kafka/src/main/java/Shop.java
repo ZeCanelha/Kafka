@@ -253,6 +253,10 @@ public class Shop {
 		
 		Producer<String, String> producer = new KafkaProducer<>(props);
 		producer.send(new ProducerRecord<String, String>(topic,"Accepted",message));
+		
+		int revenue = Integer.parseInt(map.get("Amount")) * Integer.parseInt(map.get("Price"));
+		producer.send(new ProducerRecord<String, String>("purchases", "Revenue", String.valueOf(revenue)));
+		
 		producer.close();
 		
 		System.out.println("Produtos enviados");
@@ -285,35 +289,5 @@ public class Shop {
 	
 	
 }
-
-
-class SendReply implements Runnable
-{
-	private String topicToRespond;
-	private Properties props;
-	private HashMap<String,String> map;
-	
-	SendReply (Properties props, String s, HashMap<String,String> map)
-	{
-		this.props = props;
-		this.topicToRespond = s;
-		this.map = map;
-	}
-
-	@Override
-	public void run() {
-		
-		
-		String message = map.get("Product") +"," +map.get("Amount") + "," + map.get("Price");
-		
-		Producer<String, String> producer = new KafkaProducer<>(this.props);
-		producer.send(new ProducerRecord<String, String>(this.topicToRespond,"Accepted",message));
-		producer.close();
-		
-		System.out.println("Produtos enviados");
-		
-	}
-}
-
 
 
