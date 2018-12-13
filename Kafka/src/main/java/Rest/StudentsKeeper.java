@@ -22,6 +22,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.ForeachAction;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
 
 
 
@@ -78,8 +79,13 @@ public class StudentsKeeper {
  		StreamsBuilder builder = new StreamsBuilder();
  		KStream<String,String> topicStream = builder.stream("reply");
  		
+ 		KStream<String,String> newStream = topicStream.map((k,v) -> KeyValue.pair(v.split(",")[0],v.split(",")[1]));
  		
- 		topicStream.foreach(new ForeachAction<String, String>() {
+ 		KTable<String, String> newLines = newStream.groupByKey()
+ 				.reduce((oldval,newval) -> Long.toString(Long.parseLong(oldval) + Long.parseLong(newval)) ,Materialized.as("MaxAmountItems"));
+ 		
+ 		
+ 		newStream.foreach(new ForeachAction<String, String>() {
  			
  		    public void apply(String key, String value) {
  		    	System.out.println(key + ":" + value);

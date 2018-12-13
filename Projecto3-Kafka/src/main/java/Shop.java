@@ -20,7 +20,7 @@ import database.Database;
 
 public class Shop {
 	
-	static boolean arrived;
+	static boolean arrived = false;
 	
 	public static void main(String[] args) {
 		
@@ -154,17 +154,23 @@ public class Shop {
 		  				
 		  				else
 		  				{
-		  					
 		  					System.out.println("Insuficient stock. Reordering from suplier.");
 		  					sendReorderRequest(map, "reordertopic");
 		  					try {
-		  						
 								Thread.sleep(20000);
 							} catch (InterruptedException e) {
 								e.printStackTrace();
 							}
 		  					
-		  					sendReply(props, map, replyTopic);
+		  					if(arrived)
+		  					{
+		  						sendReply(props, map, replyTopic);
+		  						
+		  					}
+		  					else
+		  					{
+		  						System.out.println("Caguei");
+		  					}
 		  					
 		  					
 		  				}
@@ -172,6 +178,7 @@ public class Shop {
 	  				{
 	  					System.out.println(nfe.getMessage());
 	  				}
+	  		
 	  			}
 	  			
 	  			if ( record.topic().equals("shipmentstopic"))
@@ -274,7 +281,38 @@ public class Shop {
 		
 		System.out.println("Produtos em falta pedidos");
 		
-	}	
+	}
+	
+	
+}
+
+
+class SendReply implements Runnable
+{
+	private String topicToRespond;
+	private Properties props;
+	private HashMap<String,String> map;
+	
+	SendReply (Properties props, String s, HashMap<String,String> map)
+	{
+		this.props = props;
+		this.topicToRespond = s;
+		this.map = map;
+	}
+
+	@Override
+	public void run() {
+		
+		
+		String message = map.get("Product") +"," +map.get("Amount") + "," + map.get("Price");
+		
+		Producer<String, String> producer = new KafkaProducer<>(this.props);
+		producer.send(new ProducerRecord<String, String>(this.topicToRespond,"Accepted",message));
+		producer.close();
+		
+		System.out.println("Produtos enviados");
+		
+	}
 }
 
 
