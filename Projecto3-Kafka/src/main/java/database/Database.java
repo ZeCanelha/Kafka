@@ -89,15 +89,17 @@ public class Database {
 		
 	}
 	
-	public void updateStorage(String prodcutName, String amount)
+	public void updateStorage(String prodcutName, String amount, String price)
 	{
 		String sqlRequest = "UPDATE SHOP "
-				+ "SET AMOUNT = ? "
+				+ "SET AMOUNT = ? , PRICE = ? "
 				+ "WHERE OBJECT_NAME = ?";
 		try {
 			preparedStatement = connect.prepareStatement(sqlRequest);
-			preparedStatement.setString(2, prodcutName);
+			
 			preparedStatement.setString(1, amount);
+			preparedStatement.setString(2, price);
+			preparedStatement.setString(3, prodcutName);
 			
 			preparedStatement.executeUpdate();
 			preparedStatement.close();

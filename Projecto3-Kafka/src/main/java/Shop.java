@@ -20,7 +20,7 @@ import database.Database;
 
 public class Shop {
 	
-	static boolean arrived = false;
+	static boolean onHold = false;
 	
 	public static void main(String[] args) {
 		
@@ -82,7 +82,7 @@ public class Shop {
 	  	Database db = new Database();
 	  	String replyTopic;
 	  	HashMap<String, String> map;
-	  	
+	  	Thread waitForReply;
 	  	
 	  	
 	  	KafkaConsumer<String, String> shopConsumer = new KafkaConsumer<>(ccprops);
@@ -104,8 +104,10 @@ public class Shop {
 	  				try
 	  				{
 	  					String product = record.key();
+	  					
 		  				map = parser(record.value());
 		  				map.put("Product", product);
+		  				String price = map.put("Price", db.getPrice(product));
 		  				replyTopic = map.get("ReplyTopic");
 
 		  				/* check storage  and reply accordingly guardar o amount para actualizar na bd */
@@ -125,7 +127,7 @@ public class Shop {
 		  				{
 		  					System.out.println("Entrei");
 		  					
-		  					String price = map.put("Price", db.getPrice(product));
+		  					
 		  					
 		  					sendReply(props, map, replyTopic);
 		  					
@@ -146,7 +148,7 @@ public class Shop {
 		  					{
 		  						
 		  						/* update values on database */
-		  						db.updateStorage(product, String.valueOf(storageAmount-clientAmont));
+		  						db.updateStorage(product, String.valueOf(storageAmount-clientAmont), price);
 
 		  					}
 		  					
@@ -154,23 +156,9 @@ public class Shop {
 		  				
 		  				else
 		  				{
-		  					System.out.println("Insuficient stock. Reordering from suplier.");
-		  					sendReorderRequest(map, "reordertopic");
-		  					try {
-								Thread.sleep(20000);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
+		  					// Reorder and re-send
 		  					
-		  					if(arrived)
-		  					{
-		  						sendReply(props, map, replyTopic);
-		  						
-		  					}
-		  					else
-		  					{
-		  						System.out.println("Caguei");
-		  					}
+		  					
 		  					
 		  					
 		  				}
@@ -194,7 +182,7 @@ public class Shop {
 	  				
 	  				if (db.hasProduct(product)) 
 	  				{
-	  					db.updateStorage(product, amount);
+	  					db.updateStorage(product, amount,price);
 	  					System.out.println("Storage updated!");
 
 	  				}
@@ -286,8 +274,6 @@ public class Shop {
 		System.out.println("Produtos em falta pedidos");
 		
 	}
-	
-	
 }
 
 
