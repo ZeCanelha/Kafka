@@ -107,7 +107,7 @@ public class Shop {
 	  					
 		  				map = parser(record.value());
 		  				map.put("Product", product);
-		  				String price = map.put("Price", db.getPrice(product));
+		  				map.put("Price", db.getPrice(product));
 		  				replyTopic = map.get("ReplyTopic");
 
 		  				/* check storage  and reply accordingly guardar o amount para actualizar na bd */
@@ -126,9 +126,7 @@ public class Shop {
 		  				if (  storageAmount >= clientAmont  )
 		  				{
 		  					System.out.println("Entrei");
-		  					
-		  					
-		  					
+
 		  					sendReply(props, map, replyTopic);
 		  					
 		  					int percentage = (int) (ivalue * 0.25);
@@ -148,7 +146,7 @@ public class Shop {
 		  					{
 		  						
 		  						/* update values on database */
-		  						db.updateStorage(product, String.valueOf(storageAmount-clientAmont), price);
+		  						db.updateStorage(product, String.valueOf(storageAmount-clientAmont), map.get("Price"));
 
 		  					}
 		  					
@@ -240,7 +238,9 @@ public class Shop {
 		String message = map.get("Product") +"," +map.get("Amount") + "," + map.get("Price");
 		
 		Producer<String, String> producer = new KafkaProducer<>(props);
+		producer.send(new ProducerRecord<String, String>("reply","Accepted",message));
 		producer.send(new ProducerRecord<String, String>(topic,"Accepted",message));
+		
 		
 		int revenue = Integer.parseInt(map.get("Amount")) * Integer.parseInt(map.get("Price"));
 		producer.send(new ProducerRecord<String, String>("purchases", "Revenue", String.valueOf(revenue)));

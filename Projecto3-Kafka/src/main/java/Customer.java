@@ -3,6 +3,7 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.UUID;
 
 //import simple producer packages
 import org.apache.kafka.clients.producer.Producer;
@@ -82,19 +83,20 @@ public class Customer {
 	  	
 	  	
 	  	/* Create a topic for response */
+	  	UUID topic = UUID.randomUUID();
 	  	
 	  	 byte[] array = new byte[7]; // length is bounded by 7
 	     new Random().nextBytes(array);
-	     String generatedTopic = new String(array, Charset.forName("UTF-8"));
+	     String generatedTopic = new String(array, Charset.forName("US-ASCII"));
 	  
-	     //System.out.println("Topic for replying: " + generatedTopic);
+	     System.out.println("Topic for replying: " + topic.toString());
 	  	
 	  	/*
 	  	 *  Creating Customer-Customer thread
 	  	 *  
 	  	 */
 	  	
-	  	Thread CustumerCustthread = new Thread(new CustomerCustomer(ccprops,"reply"));
+	  	Thread CustumerCustthread = new Thread(new CustomerCustomer(ccprops,topic.toString()));
 	  	
 	  	CustumerCustthread.start();
 	  	
@@ -102,7 +104,7 @@ public class Customer {
 	  	 *  Creating Customer-Producer thread
 	  	 */
 	  	
-	  	Thread CustumerProdthread = new Thread(new CustomerProducer(props,"reply"));
+	  	Thread CustumerProdthread = new Thread(new CustomerProducer(props,topic.toString()));
 	  	
 	  	CustumerProdthread.start();
 	  	
@@ -116,7 +118,6 @@ public class Customer {
 class CustomerProducer implements Runnable
 {
 	private final String produceTopic = "purchasestopic";
-	private final String customerKey = "PURCHASE";
 	private String topicToRespond;
 	private Properties props;
 	private Database db;

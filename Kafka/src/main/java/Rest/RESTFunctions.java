@@ -1,16 +1,16 @@
 package Rest;
 
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.StringTokenizer;
+
 
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.serialization.Serdes;
@@ -26,34 +26,44 @@ import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-import org.json.JSONObject;
 
 
 
-@Path("/students")
-public class StudentsKeeper {
+
+@Path("/admin")
+public class RESTFunctions {
+	
+	private Properties props = new Properties();
+	private static List<String> newList;
+	
+	public RESTFunctions() {
+		this.props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
+	  	this.props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+	  	this.props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,"SASL_SSL");
+	  	this.props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+	  	this.props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+		
+	}
+	
+	
  	
  	@Path("numberItemsEverSold")
  	@GET
+ 	@Produces(MediaType.APPLICATION_JSON)
  	public List<String> NumberItemsSold()
  	{
  		
  		/* TODO: Return count
  		 * 
  		 */
- 		Properties props = new Properties();
- 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
-	  	props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-	  	props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,"SASL_SSL");
-	  	props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
-		props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-		
+ 				
  		StreamsBuilder builder = new StreamsBuilder();
  		
  		KStream<String,String> topicStream = builder.stream("reply");
- 		KTable<String,Long> tables = topicStream.groupByKey().count();
  		
+ 		KStream<String,String> newStream = topicStream.map((k,v) -> KeyValue.pair("Number",String.valueOf(1)));
+ 		KTable<String, String> newLines = newStream.groupByKey()
+ 				.reduce((oldval,newval) -> Long.toString(Long.parseLong(oldval) + Long.parseLong(newval)) ,Materialized.as("ItemsSold"));
  		
  		KafkaStreams streams = new KafkaStreams(builder.build(), props);
  	    streams.start();
@@ -62,10 +72,10 @@ public class StudentsKeeper {
  	    
  	   try {
 			Thread.sleep(2000);
-			ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("MaxAmountItems", QueryableStoreTypes.keyValueStore());
+			ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("ItemsSold", QueryableStoreTypes.keyValueStore());
 			
-			ret.add(keyValueStore.get("Accepted"));
-			
+			ret.add(keyValueStore.get("Number"));
+			System.out.println("Sold: " + keyValueStore.get("Number"));
 			
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -79,13 +89,9 @@ public class StudentsKeeper {
  	
  	@Path("numberItemsSoldEach")
  	@GET
+ 	@Produces(MediaType.APPLICATION_JSON)
  	public List<String> NumberItemsSoldEach()
  	{
- 		Properties props = new Properties();
- 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "Rest-Service");
-	  	props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
-		props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 		
  		StreamsBuilder builder = new StreamsBuilder();
  		KStream<String,String> topicStream = builder.stream("reply");
@@ -96,38 +102,30 @@ public class StudentsKeeper {
  				.reduce((oldval,newval) -> Long.toString(Long.parseLong(oldval) + Long.parseLong(newval)) ,Materialized.as("MaxAmountItems"));
  		
 
- 		
  		KafkaStreams streams = new KafkaStreams(builder.build(), props);
  	    streams.start();
  	    
- 	   List<String> obj = new ArrayList<>();
+ 	    List<String> obj = new ArrayList<>();
  	   
- 	   	
- 	    try {
-			Thread.sleep(2000);
-			ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("MaxAmountItems", QueryableStoreTypes.keyValueStore());
-			KeyValueIterator<String, String> range = keyValueStore.all();
-			
-			
-			while (range.hasNext()) {
-			   KeyValue<String, String> next = range.next();
-			   obj.add("Product: " + next.key + "\nItems sold:" + next.value);
-			   
-			}
-			range.close();
-			
-			
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("MaxAmountItems", QueryableStoreTypes.keyValueStore());
+		KeyValueIterator<String, String> range = keyValueStore.all();
+		
+		
+		while (range.hasNext()) {
+		   KeyValue<String, String> next = range.next();
+		   obj.add("Product: " + next.key + "\nItems sold:" + next.value);
+		   System.out.println("Product:" + next.key + "nItems sold:" + next.value);
+		   
 		}
- 	    
- 	   return obj;
-
+		range.close();
+			
+ 	   	return obj;
+ 	   
  	}
  	
  	@Path("maximumPrice")
  	@GET
+ 	@Produces(MediaType.APPLICATION_JSON)
  	public List<String> MaximumPrice()
  	{
  		Properties props = new Properties();
@@ -149,31 +147,20 @@ public class StudentsKeeper {
  		KafkaStreams streams = new KafkaStreams(builder.build(), props);
  	    streams.start();
  	    
- 	   List<String> obj = new ArrayList<>();
- 	   
- 	    
- 	    try {
-			Thread.sleep(2000);
-			ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("MaxPrice", QueryableStoreTypes.keyValueStore());
-			KeyValueIterator<String, String> range = keyValueStore.all();
-			   
-			
-			while (range.hasNext()) {
-			   KeyValue<String, String> next = range.next();
-			   
-;
-			   obj.add("Product: " + next.key + "\n Maximum Price sold:" + next.value);
-			   
-			}
-			range.close();
-			
-			
-		} catch (InterruptedException e) {
-
-			e.printStackTrace();
+ 	    List<String> obj = new ArrayList<>();
+	   
+		ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("MaxPrice", QueryableStoreTypes.keyValueStore());
+		KeyValueIterator<String, String> range = keyValueStore.all();
+	   
+		
+		while (range.hasNext()) {
+			KeyValue<String, String> next = range.next();
+	   
+			obj.add("Product: " + next.key + "\n Maximum Price sold:" + next.value);
+		   
 		}
- 	    
- 	   return obj;
+		range.close();
+		return obj;
 
  	}
  	
@@ -186,6 +173,7 @@ public class StudentsKeeper {
  	
  	@Path("revenueProfit")
  	@GET
+ 	@Produces(MediaType.APPLICATION_JSON)
  	public HashMap<String,String> RevenueProfit()
  	{
  		HashMap<String,String> obj = new HashMap<>();
@@ -205,44 +193,35 @@ public class StudentsKeeper {
  		KafkaStreams streams = new KafkaStreams(builder.build(), props);
  	    streams.start();
  		
- 		try {
-			Thread.sleep(2000);
-			ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("economics", QueryableStoreTypes.keyValueStore());
-			KeyValueIterator<String, String> range = keyValueStore.all();
-			   
-			int spent = 0, revenue = 0;
-			while (range.hasNext()) {
-			   KeyValue<String, String> next = range.next();
-			   
 
-			   if (next.key.equalsIgnoreCase("revenue")) {
-				   obj.put(next.key, next.value);
-				  
-			   } else {
-				   obj.put(next.key, next.value);
-			  }
-			}
-			range.close();
-			
-			if (obj.containsKey("Spent"))
-			{
-				spent = Integer.parseInt(obj.get("Spent"));
-			}
-			if (obj.containsKey("Revenue"))
-			{
-				revenue = Integer.parseInt(obj.get("Revenue"));
-			}
-			
-			System.out.println("Revenue: " +revenue+"\nSpent: " + spent + "\nProfit: " + (revenue - spent));
-			
+		ReadOnlyKeyValueStore<String, String> keyValueStore = streams.store("economics", QueryableStoreTypes.keyValueStore());
+		KeyValueIterator<String, String> range = keyValueStore.all();
+		   
+		int spent = 0, revenue = 0;
+		while (range.hasNext()) {
+		   KeyValue<String, String> next = range.next();
+		   
 
-				
-			
-			
-		} catch (InterruptedException e) {
-
-			e.printStackTrace();
+		   if (next.key.equalsIgnoreCase("revenue")) {
+			   obj.put(next.key, next.value);
+			  
+		   } else {
+			   obj.put(next.key, next.value);
+		  }
 		}
+		range.close();
+		
+		if (obj.containsKey("Spent"))
+		{
+			spent = Integer.parseInt(obj.get("Spent"));
+		}
+		if (obj.containsKey("Revenue"))
+		{
+			revenue = Integer.parseInt(obj.get("Revenue"));
+		}
+		
+		System.out.println("Revenue: " +revenue+"\nSpent: " + spent + "\nProfit: " + (revenue - spent));
+		
 
  		return obj;
 
@@ -250,6 +229,7 @@ public class StudentsKeeper {
  	
  	@Path("averagesSalesPrice")
  	@GET
+ 	@Produces(MediaType.APPLICATION_JSON)
  	public List<String> averageSales()
  	{
  		List<String> string = new ArrayList<>();

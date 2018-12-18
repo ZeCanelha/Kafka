@@ -14,7 +14,7 @@ public class MyRESTServer {
 
   public static void main(String[] args) {
   URI baseUri = UriBuilder.fromUri(host).port(port).build();
-  ResourceConfig config = new ResourceConfig(StudentsKeeper.class);
+  ResourceConfig config = new ResourceConfig(RESTFunctions.class);
   JdkHttpServerFactory.createHttpServer(baseUri, config);
  }
 }
